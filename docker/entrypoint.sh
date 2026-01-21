@@ -10,7 +10,7 @@ if [ -n "$MONGODB_USER" ] && [ -n "$MONGODB_PASSWORD" ] && [ -n "$MONGODB_HOST" 
   ENCODED_PASSWORD=$(echo -n "$MONGODB_PASSWORD" | sed 's/@/%40/g; s/:/%3A/g; s/\//%2F/g; s/?/%3F/g; s/#/%23/g')
 
   # Build the full MongoDB URI
-  export MONGO_URI="mongodb://${MONGODB_USER}:${ENCODED_PASSWORD}@${MONGODB_HOST}:27017/librechat?tls=true&tlsCAFile=/app/rds-combined-ca-bundle.pem&retryWrites=false&directConnection=true"
+  export MONGO_URI="mongodb://${MONGODB_USER}:${ENCODED_PASSWORD}@${MONGODB_HOST}:27017/librechat?tls=true&tlsCAFile=/app/rds-combined-ca-bundle.pem&retryWrites=false&directConnection=true&authSource=admin"
 
   echo "MongoDB URI constructed from environment variables"
 fi
