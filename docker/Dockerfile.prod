@@ -9,11 +9,15 @@ COPY config/apogee/librechat.yaml /app/librechat.yaml
 # Copy branding assets
 COPY config/apogee/branding/ /app/client/public/images/branding/
 
-# Download RDS CA bundle for DocumentDB TLS
+# Download RDS CA bundle for DocumentDB TLS and add entrypoint
 USER root
 RUN wget -q https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem \
     -O /app/rds-combined-ca-bundle.pem && \
     chown node:node /app/rds-combined-ca-bundle.pem
+
+# Copy and set up entrypoint script
+COPY docker/entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh && chown node:node /app/entrypoint.sh
 USER node
 
 # Environment defaults
@@ -22,3 +26,6 @@ ENV NODE_ENV=production \
     PORT=3080
 
 EXPOSE 3080
+
+ENTRYPOINT ["/app/entrypoint.sh"]
+CMD ["npm", "start"]
