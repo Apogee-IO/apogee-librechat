@@ -28,4 +28,4 @@ ENV NODE_ENV=production \
 EXPOSE 3080
 
 ENTRYPOINT ["/app/entrypoint.sh"]
-CMD ["npm", "start"]
+CMD ["npm", "run", "backend"]
