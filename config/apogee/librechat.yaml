@@ -1,0 +1,72 @@
+version: 1.1.7
+
+# Apogee Platform Configuration for LibreChat
+# Connect to MCP gateway for all tools
+
+endpoints:
+  bedrock:
+    # Use inference profile IDs (us.anthropic.*) for newer models
+    models:
+      us.anthropic.claude-sonnet-4-5-20250929-v1:0:
+        displayName: "Claude Sonnet 4.5"
+        maxContextTokens: 200000
+        maxOutputTokens: 8192
+      us.anthropic.claude-haiku-4-5-20251001-v1:0:
+        displayName: "Claude Haiku 4.5 (Fast)"
+        maxContextTokens: 200000
+        maxOutputTokens: 8192
+      us.anthropic.claude-opus-4-5-20251101-v1:0:
+        displayName: "Claude Opus 4.5"
+        maxContextTokens: 200000
+        maxOutputTokens: 8192
+      us.anthropic.claude-3-5-sonnet-20241022-v2:0:
+        displayName: "Claude 3.5 Sonnet v2"
+        maxContextTokens: 200000
+        maxOutputTokens: 8192
+
+# MCP Settings - allow internal Docker network domains
+mcpSettings:
+  allowedDomains:
+    - "gateway"
+    - "localhost"
+    - "host.docker.internal"
+    - "mcp.apog.ai"
+
+# MCP Server Configuration
+# Connects to Apogee MCP Gateway which provides all tools
+# Note: Use gateway:3001 for local Docker, mcp.apog.ai for production
+mcpServers:
+  apogee:
+    type: streamable-http
+    url: http://gateway:3001/mcp
+    timeout: 60000
+    initTimeout: 10000
+
+# Registration settings
+registration:
+  socialLogins: []
+
+# Interface customization
+interface:
+  privacyPolicy:
+    externalUrl: "https://apog.ai/privacy"
+  termsOfService:
+    externalUrl: "https://apog.ai/terms"
+  endpointsMenu: true
+  modelSelect: true
+  parameters: true
+  sidePanel: true
+  presets: true
+
+# Rate limiting (conservative defaults)
+rateLimits:
+  fileUploads:
+    ipMax: 100
+    ipWindowInMinutes: 60
+    userMax: 50
+    userWindowInMinutes: 60
+  conversationsImport:
+    ipMax: 100
+    ipWindowInMinutes: 60
+    userMax: 50
+    userWindowInMinutes: 60

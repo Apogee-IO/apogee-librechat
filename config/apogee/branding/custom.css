@@ -1,0 +1,39 @@
+/* Apogee Custom Branding for LibreChat */
+
+:root {
+  /* Primary brand colors */
+  --apogee-primary: #1a365d;
+  --apogee-primary-light: #2a4a7f;
+  --apogee-primary-dark: #0f2440;
+
+  /* Accent colors */
+  --apogee-accent: #3182ce;
+  --apogee-accent-light: #4299e1;
+
+  /* Neutral palette */
+  --apogee-gray-50: #f7fafc;
+  --apogee-gray-100: #edf2f7;
+  --apogee-gray-200: #e2e8f0;
+  --apogee-gray-700: #4a5568;
+  --apogee-gray-800: #2d3748;
+  --apogee-gray-900: #1a202c;
+}
+
+/* Apply Apogee colors to LibreChat theme */
+/* Note: Actual CSS selectors depend on LibreChat's class names */
+/* Update these after inspecting the built application */
+
+/* Example overrides - customize as needed */
+/*
+.sidebar-header {
+  background-color: var(--apogee-primary);
+}
+
+.send-button {
+  background-color: var(--apogee-accent);
+}
+
+.send-button:hover {
+  background-color: var(--apogee-accent-light);
+}
+*/

@@ -1,0 +1,24 @@
+# Apogee LibreChat Production Dockerfile
+# Extends official LibreChat image with Apogee configuration
+
+FROM ghcr.io/danny-avila/librechat:latest
+
+# Copy Apogee configuration
+COPY config/apogee/librechat.yaml /app/librechat.yaml
+
+# Copy branding assets
+COPY config/apogee/branding/ /app/client/public/images/branding/
+
+# Download RDS CA bundle for DocumentDB TLS
+USER root
+RUN wget -q https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem \
+    -O /app/rds-combined-ca-bundle.pem && \
+    chown node:node /app/rds-combined-ca-bundle.pem
+USER node
+
+# Environment defaults
+ENV NODE_ENV=production \
+    HOST=0.0.0.0 \
+    PORT=3080
+
+EXPOSE 3080

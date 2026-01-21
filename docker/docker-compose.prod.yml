@@ -1,0 +1,34 @@
+# Production Docker Compose
+# For reference only - actual production uses ECS Fargate
+
+services:
+  librechat:
+    image: 654654458581.dkr.ecr.us-east-1.amazonaws.com/apogee-librechat:latest
+    ports:
+      - "3080:3080"
+    environment:
+      - HOST=0.0.0.0
+      - NODE_ENV=production
+      - MONGO_URI=${MONGO_URI}
+      - BEDROCK_AWS_DEFAULT_REGION=us-east-1
+      - MCP_GATEWAY_URL=https://mcp.apog.ai
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
+      - ALLOW_REGISTRATION=true
+      - DOMAIN_CLIENT=https://chat.apog.ai
+      - DOMAIN_SERVER=https://chat.apog.ai
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3080/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
