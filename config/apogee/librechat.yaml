@@ -34,11 +34,11 @@ mcpSettings:
 
 # MCP Server Configuration
 # Connects to Apogee MCP Gateway which provides all tools
-# Note: Use gateway:3001 for local Docker, mcp.apog.ai for production
+# Uses MCP_GATEWAY_URL env var: http://gateway:3001 for local, https://mcp.apog.ai for production
 mcpServers:
   apogee:
     type: streamable-http
-    url: http://gateway:3001/mcp
+    url: ${MCP_GATEWAY_URL:-http://gateway:3001}/mcp
     timeout: 60000
     initTimeout: 10000
 
