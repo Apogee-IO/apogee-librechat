@@ -9,11 +9,21 @@ COPY config/apogee/librechat.yaml /app/librechat.yaml
 # Copy branding assets
 COPY config/apogee/branding/ /app/client/public/images/branding/
 
-# Download RDS CA bundle for DocumentDB TLS and add entrypoint
+# Copy custom Apogee SSO server files
+COPY config/apogee/server/ /app/apogee-server/
+
+# Download RDS CA bundle for DocumentDB TLS and install jose for JWT verification
 USER root
 RUN wget -q https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem \
     -O /app/rds-combined-ca-bundle.pem && \
-    chown node:node /app/rds-combined-ca-bundle.pem
+    chown node:node /app/rds-combined-ca-bundle.pem && \
+    chown -R node:node /app/apogee-server
+
+# Install jose for JWT verification in the apogee-server directory
+WORKDIR /app/apogee-server
+RUN npm init -y && npm install jose
+
+WORKDIR /app
 
 # Copy and set up entrypoint script
 COPY docker/entrypoint.sh /app/entrypoint.sh

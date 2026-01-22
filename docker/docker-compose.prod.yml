@@ -17,6 +17,8 @@ services:
       - ALLOW_REGISTRATION=true
       - DOMAIN_CLIENT=https://chat.apog.ai
       - DOMAIN_SERVER=https://chat.apog.ai
+      # Apogee SSO configuration
+      - APOGEE_JWT_PUBLIC_KEY=${APOGEE_JWT_PUBLIC_KEY}
     deploy:
       replicas: 2
       resources:

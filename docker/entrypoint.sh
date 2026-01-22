@@ -2,6 +2,7 @@
 # Apogee LibreChat Entrypoint
 # Constructs MONGO_URI from separate environment variables at runtime
 # Also substitutes MCP_GATEWAY_URL in librechat.yaml
+# Applies Apogee SSO auth patch if configured
 
 set -e
 
@@ -21,6 +22,12 @@ if [ -n "$MONGODB_USER" ] && [ -n "$MONGODB_PASSWORD" ] && [ -n "$MONGODB_HOST" 
   export MONGO_URI="mongodb://${MONGODB_USER}:${ENCODED_PASSWORD}@${MONGODB_HOST}:27017/librechat?tls=true&tlsCAFile=/app/rds-combined-ca-bundle.pem&retryWrites=false&directConnection=true&authSource=admin"
 
   echo "MongoDB URI constructed from environment variables"
+fi
+
+# Apply Apogee SSO auth patch if public key is configured
+if [ -n "$APOGEE_JWT_PUBLIC_KEY" ] && [ -f /app/apogee-server/patch-auth.js ]; then
+  echo "Applying Apogee SSO authentication patch..."
+  node /app/apogee-server/patch-auth.js || echo "Warning: Auth patch failed, continuing without SSO"
 fi
 
 # Execute the original command (npm start)
