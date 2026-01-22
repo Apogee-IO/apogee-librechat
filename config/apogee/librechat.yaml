@@ -5,22 +5,37 @@ version: 1.1.7
 
 endpoints:
   bedrock:
-    # Use inference profile IDs (us.anthropic.*) for newer models
-    models:
-      us.anthropic.claude-sonnet-4-5-20250929-v1:0:
-        displayName: "Claude Sonnet 4.5"
+    # Use inference profile IDs (us.anthropic.*) for cross-region inference
+    streamRate: 25
+    titleModel: "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+
+# Model specifications with user-friendly labels
+modelSpecs:
+  enforce: true
+  prioritize: true
+  list:
+    - name: "sonnet"
+      label: "Claude Sonnet 4.5"
+      description: "Best balance of speed and quality for most tasks"
+      preset:
+        endpoint: "bedrock"
+        model: "us.anthropic.claude-sonnet-4-5-20250929-v1:0"
         maxContextTokens: 200000
         maxOutputTokens: 8192
-      us.anthropic.claude-haiku-4-5-20251001-v1:0:
-        displayName: "Claude Haiku 4.5 (Fast)"
+    - name: "haiku"
+      label: "Claude Haiku 4.5 (Fast)"
+      description: "Fastest responses for simple questions"
+      preset:
+        endpoint: "bedrock"
+        model: "us.anthropic.claude-haiku-4-5-20251001-v1:0"
         maxContextTokens: 200000
         maxOutputTokens: 8192
-      us.anthropic.claude-opus-4-5-20251101-v1:0:
-        displayName: "Claude Opus 4.5"
-        maxContextTokens: 200000
-        maxOutputTokens: 8192
-      us.anthropic.claude-3-5-sonnet-20241022-v2:0:
-        displayName: "Claude 3.5 Sonnet v2"
+    - name: "opus"
+      label: "Claude Opus 4.5 (Advanced)"
+      description: "Most capable model for complex analysis"
+      preset:
+        endpoint: "bedrock"
+        model: "us.anthropic.claude-opus-4-5-20251101-v1:0"
         maxContextTokens: 200000
         maxOutputTokens: 8192
 
