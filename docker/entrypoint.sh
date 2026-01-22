@@ -27,6 +27,11 @@ fi
 # Apply Apogee SSO auth patch if public key is configured
 if [ -n "$APOGEE_JWT_PUBLIC_KEY" ] && [ -f /app/apogee-server/patch-auth.js ]; then
   echo "Applying Apogee SSO authentication patch..."
+  if [ -n "$APOGEE_DASHBOARD_URL" ]; then
+    echo "Dashboard URL configured: $APOGEE_DASHBOARD_URL"
+  else
+    echo "Warning: APOGEE_DASHBOARD_URL not set, redirect middleware will be skipped"
+  fi
   node /app/apogee-server/patch-auth.js || echo "Warning: SSO auth patch failed, continuing without SSO"
 fi
 

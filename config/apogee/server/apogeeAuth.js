@@ -36,7 +36,7 @@ async function getPublicKey() {
  * Handles SSO callback from Apogee dashboard
  */
 router.get('/apogee', async (req, res) => {
-  const { token } = req.query;
+  const { token, return_to } = req.query;
 
   if (!token) {
     console.error('[Apogee Auth] Missing token');
@@ -99,8 +99,14 @@ router.get('/apogee', async (req, res) => {
     // Use LibreChat's built-in auth token mechanism
     await setAuthTokens(user._id, res);
 
-    // Redirect to chat home
-    res.redirect('/');
+    // Redirect to return_to path or chat home
+    // Only allow relative paths for security
+    let redirectPath = '/';
+    if (return_to && typeof return_to === 'string' && return_to.startsWith('/')) {
+      redirectPath = return_to;
+    }
+    console.log(`[Apogee Auth] Redirecting to: ${redirectPath}`);
+    res.redirect(redirectPath);
   } catch (err) {
     console.error('[Apogee Auth] Error:', err.message);
 
