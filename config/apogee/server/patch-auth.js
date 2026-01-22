@@ -197,8 +197,13 @@ function apogeeRedirectMiddleware(req, res, next) {
     return next();
   }
 
-  // Skip if user is authenticated (check LibreChat's session)
-  if (req.user || req.session?.user) {
+  // Check for authentication via multiple methods:
+  // 1. req.user (set by passport after authentication)
+  // 2. req.session?.user (session-based auth)
+  // 3. LibreChat's refresh token cookie (set by setAuthTokens)
+  const hasRefreshToken = req.cookies?.refreshToken;
+
+  if (req.user || req.session?.user || hasRefreshToken) {
     return next();
   }
 
