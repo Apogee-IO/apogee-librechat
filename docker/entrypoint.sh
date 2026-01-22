@@ -25,16 +25,9 @@ if [ -n "$MONGODB_USER" ] && [ -n "$MONGODB_PASSWORD" ] && [ -n "$MONGODB_HOST" 
 fi
 
 # Apply Apogee SSO auth patch if public key is configured
-echo "[Apogee SSO] Checking SSO configuration..."
-echo "[Apogee SSO] APOGEE_JWT_PUBLIC_KEY set: $([ -n "$APOGEE_JWT_PUBLIC_KEY" ] && echo 'yes' || echo 'no')"
-echo "[Apogee SSO] patch-auth.js exists: $([ -f /app/apogee-server/patch-auth.js ] && echo 'yes' || echo 'no')"
-ls -la /app/apogee-server/ 2>/dev/null || echo "[Apogee SSO] /app/apogee-server/ directory not found"
-
 if [ -n "$APOGEE_JWT_PUBLIC_KEY" ] && [ -f /app/apogee-server/patch-auth.js ]; then
-  echo "[Apogee SSO] Applying authentication patch..."
-  node /app/apogee-server/patch-auth.js || echo "[Apogee SSO] Warning: Auth patch failed, continuing without SSO"
-else
-  echo "[Apogee SSO] Skipping patch - prerequisites not met"
+  echo "Applying Apogee SSO authentication patch..."
+  node /app/apogee-server/patch-auth.js || echo "Warning: SSO auth patch failed, continuing without SSO"
 fi
 
 # Execute the original command (npm start)
