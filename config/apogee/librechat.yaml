@@ -14,25 +14,25 @@ modelSpecs:
   enforce: true
   prioritize: true
   list:
-    - name: "sonnet"
-      label: "Claude Sonnet 4.5"
+    - name: "pro"
+      label: "Pro"
       description: "Best balance of speed and quality for most tasks"
       preset:
         endpoint: "bedrock"
         model: "us.anthropic.claude-sonnet-4-5-20250929-v1:0"
         maxContextTokens: 200000
         maxOutputTokens: 8192
-    - name: "haiku"
-      label: "Claude Haiku 4.5 (Fast)"
+    - name: "fast"
+      label: "Fast"
       description: "Fastest responses for simple questions"
       preset:
         endpoint: "bedrock"
         model: "us.anthropic.claude-haiku-4-5-20251001-v1:0"
         maxContextTokens: 200000
         maxOutputTokens: 8192
-    - name: "opus"
-      label: "Claude Opus 4.5 (Advanced)"
-      description: "Most capable model for complex analysis"
+    - name: "thinking"
+      label: "Thinking"
+      description: "Deep reasoning for complex analysis"
       preset:
         endpoint: "bedrock"
         model: "us.anthropic.claude-opus-4-5-20251101-v1:0"
@@ -68,10 +68,12 @@ interface:
   termsOfService:
     externalUrl: "https://apog.ai/terms"
   endpointsMenu: true
-  modelSelect: true
+  modelSelect: false
   parameters: true
   sidePanel: true
-  presets: true
+  presets: false
+  agents: false
+  multiConvo: false
 
 # Rate limiting (conservative defaults)
 rateLimits:
