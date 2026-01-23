@@ -3,22 +3,14 @@ version: 1.2.1
 # Apogee Platform Configuration for LibreChat
 # Connect to MCP gateway for all tools
 
-# Web Search Configuration - Self-hosted stack
-# SearXNG for search, Firecrawl for scraping, Jina-compatible reranker
+# Web Search Configuration - Serper API
+# Uses Serper for both search and page scraping (simpler, works from datacenter IPs)
 webSearch:
-  # Search provider
-  searchProvider: "searxng"
-  searxngInstanceUrl: "${SEARXNG_URL}"
-  safeSearch: 1
-  # Scraper (extracts full page content)
-  scraperProvider: "firecrawl"
-  firecrawlApiKey: "${FIRECRAWL_API_KEY}"
-  firecrawlApiUrl: "${FIRECRAWL_API_URL}"
+  searchProvider: "serper"
+  serperApiKey: "${SERPER_API_KEY}"
+  scraperProvider: "serper"
   scraperTimeout: 7500
-  # Reranker (improves relevance)
-  rerankerProvider: "jina"
-  jinaApiKey: "${JINA_API_KEY}"
-  jinaApiUrl: "${JINA_API_URL}"
+  safeSearch: 1
 
 endpoints:
   bedrock:
