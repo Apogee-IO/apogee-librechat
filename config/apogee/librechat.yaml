@@ -84,6 +84,13 @@ interface:
   agents: false
   multiConvo: false
   webSearch: true
+  bookmarks: false
+
+# Disable voice features (STT/TTS)
+speech:
+  speechTab:
+    speechToText: false
+    textToSpeech: false
 
 # Rate limiting (conservative defaults)
 rateLimits:
