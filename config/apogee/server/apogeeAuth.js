@@ -99,6 +99,10 @@ router.get('/apogee', async (req, res) => {
     // Use LibreChat's built-in auth token mechanism
     await setAuthTokens(user._id, res);
 
+    // Debug: Log what cookies were set
+    const setCookieHeaders = res.getHeaders()['set-cookie'];
+    console.log('[Apogee Auth] Set-Cookie headers:', JSON.stringify(setCookieHeaders, null, 2));
+
     // Redirect to return_to path or chat home
     // Only allow relative paths for security
     let redirectPath = '/';
