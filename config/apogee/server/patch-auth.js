@@ -306,10 +306,57 @@ module.exports = apogeeRedirectMiddleware;
   console.log('[Apogee Patch] Could not find app file to patch for redirect middleware');
 }
 
+/**
+ * Patch AuthService to use SameSite=lax instead of strict
+ *
+ * LibreChat hardcodes SameSite=strict which breaks SSO flows where users
+ * navigate from a different domain (apog.ai → chat.apog.ai). The browser
+ * treats the redirect chain as cross-site and won't send cookies.
+ *
+ * SameSite=lax allows cookies on top-level navigations while still protecting
+ * against CSRF attacks on subresource requests.
+ */
+async function patchCookieSameSite() {
+  const AUTH_SERVICE_FILE = '/app/api/server/services/AuthService.js';
+  const COOKIE_PATCH_MARKER = '// APOGEE_COOKIE_PATCH';
+
+  if (!fs.existsSync(AUTH_SERVICE_FILE)) {
+    console.log('[Apogee Patch] AuthService.js not found, skipping cookie patch');
+    return;
+  }
+
+  let content = fs.readFileSync(AUTH_SERVICE_FILE, 'utf-8');
+
+  if (content.includes(COOKIE_PATCH_MARKER)) {
+    console.log('[Apogee Patch] Cookie SameSite patch already applied');
+    return;
+  }
+
+  // Count occurrences before patching
+  const strictCount = (content.match(/sameSite:\s*['"]strict['"]/g) || []).length;
+
+  if (strictCount === 0) {
+    console.log('[Apogee Patch] No SameSite=strict found in AuthService.js');
+    return;
+  }
+
+  console.log(`[Apogee Patch] Patching ${strictCount} SameSite=strict to SameSite=lax...`);
+
+  // Replace all occurrences of sameSite: 'strict' with sameSite: 'lax'
+  content = content.replace(/sameSite:\s*['"]strict['"]/g, "sameSite: 'lax'");
+
+  // Add marker at the top
+  content = `${COOKIE_PATCH_MARKER}\n${content}`;
+
+  fs.writeFileSync(AUTH_SERVICE_FILE, content);
+  console.log('[Apogee Patch] Successfully patched cookie SameSite to lax');
+}
+
 // Run the patches
 async function runPatches() {
   await patchRoutes();
   await patchRedirectMiddleware();
+  await patchCookieSameSite();
 }
 
 runPatches().catch(err => {
