@@ -97,38 +97,7 @@ router.get('/apogee', async (req, res) => {
     }
 
     // Use LibreChat's built-in auth token mechanism
-    console.log('[Apogee Auth] Calling setAuthTokens for user:', user._id.toString());
-    try {
-      await setAuthTokens(user._id, res);
-      console.log('[Apogee Auth] setAuthTokens completed successfully');
-
-      // Verify session was saved by reading it back
-      const { findSession } = require('~/models');
-      const refreshCookie = res.getHeaders()['set-cookie']?.find(c => c.startsWith('refreshToken='));
-      if (refreshCookie) {
-        const tokenMatch = refreshCookie.match(/refreshToken=([^;]+)/);
-        if (tokenMatch) {
-          const token = tokenMatch[1];
-          // Decode JWT to get sessionId
-          const decoded = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
-          console.log('[Apogee Auth] Session ID from token:', decoded.sessionId);
-
-          // Try to find the session in DB
-          const session = await findSession({ sessionId: decoded.sessionId });
-          console.log('[Apogee Auth] Session found in DB:', session ? 'YES' : 'NO');
-          if (!session) {
-            console.error('[Apogee Auth] CRITICAL: Session was not saved to database!');
-          }
-        }
-      }
-    } catch (tokenErr) {
-      console.error('[Apogee Auth] setAuthTokens FAILED:', tokenErr.message, tokenErr.stack);
-      throw tokenErr;
-    }
-
-    // Debug: Log what cookies were set
-    const setCookieHeaders = res.getHeaders()['set-cookie'];
-    console.log('[Apogee Auth] Set-Cookie headers:', JSON.stringify(setCookieHeaders, null, 2));
+    await setAuthTokens(user._id, res);
 
     // Redirect to return_to path or chat home
     // Only allow relative paths for security
@@ -208,11 +177,37 @@ router.get('/apogee-test', async (req, res) => {
     const setCookieHeaders = res.getHeaders()['set-cookie'];
     console.log('[Apogee Test Auth] Set-Cookie headers:', JSON.stringify(setCookieHeaders, null, 2));
 
+    // Verify session was saved by reading it back
+    const { findSession } = require('~/models');
+    const refreshCookie = setCookieHeaders?.find(c => c.startsWith('refreshToken='));
+    let sessionVerified = false;
+    let sessionId = null;
+    if (refreshCookie) {
+      const tokenMatch = refreshCookie.match(/refreshToken=([^;]+)/);
+      if (tokenMatch) {
+        const token = tokenMatch[1];
+        // Decode JWT to get sessionId
+        const decoded = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+        sessionId = decoded.sessionId;
+        console.log('[Apogee Test Auth] Session ID from token:', sessionId);
+
+        // Try to find the session in DB
+        const session = await findSession({ sessionId });
+        sessionVerified = !!session;
+        console.log('[Apogee Test Auth] Session found in DB:', session ? 'YES' : 'NO');
+        if (!session) {
+          console.error('[Apogee Test Auth] CRITICAL: Session was not saved to database!');
+        }
+      }
+    }
+
     // Return JSON response for test verification
     res.json({
       success: true,
       userId: user._id.toString(),
       email: user.email,
+      sessionId,
+      sessionVerified,
       cookies: setCookieHeaders ? setCookieHeaders.map(c => c.split(';')[0]) : [],
     });
   } catch (err) {

@@ -21,6 +21,7 @@ services:
       - ALLOW_REGISTRATION=true
       - DOMAIN_CLIENT=http://localhost:3080
       - DOMAIN_SERVER=http://localhost:3080
+      - APOGEE_TEST_LOGIN_SECRET=local-test-secret
     volumes:
       - ../config/apogee/librechat.yaml:/app/librechat.yaml:ro
       - ../config/apogee/branding:/app/client/public/images/branding:ro

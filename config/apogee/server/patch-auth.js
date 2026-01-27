@@ -178,6 +178,8 @@ const PUBLIC_PATHS = [
   '/api/health',
   '/health',
   '/favicon.ico',
+  '/auth/apogee',
+  '/auth/apogee-test',
 ];
 
 // Path prefixes that are public
@@ -206,9 +208,11 @@ function apogeeRedirectMiddleware(req, res, next) {
   // 1. req.user (set by passport after authentication)
   // 2. req.session?.user (session-based auth)
   // 3. LibreChat's refresh token cookie (set by setAuthTokens)
+  // 4. Authorization header with Bearer token (for API calls)
   const hasRefreshToken = req.cookies?.refreshToken;
+  const hasAuthHeader = req.headers.authorization?.startsWith('Bearer ');
 
-  if (req.user || req.session?.user || hasRefreshToken) {
+  if (req.user || req.session?.user || hasRefreshToken || hasAuthHeader) {
     return next();
   }
 
