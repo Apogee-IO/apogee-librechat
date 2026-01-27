@@ -197,6 +197,11 @@ function apogeeRedirectMiddleware(req, res, next) {
     return next();
   }
 
+  // Debug: Log incoming cookies
+  console.log('[Apogee Redirect] Path:', req.path);
+  console.log('[Apogee Redirect] Cookie header:', req.headers.cookie);
+  console.log('[Apogee Redirect] Parsed cookies:', JSON.stringify(req.cookies));
+
   // Check for authentication via multiple methods:
   // 1. req.user (set by passport after authentication)
   // 2. req.session?.user (session-based auth)
