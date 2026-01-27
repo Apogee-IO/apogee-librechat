@@ -97,7 +97,14 @@ router.get('/apogee', async (req, res) => {
     }
 
     // Use LibreChat's built-in auth token mechanism
-    await setAuthTokens(user._id, res);
+    console.log('[Apogee Auth] Calling setAuthTokens for user:', user._id.toString());
+    try {
+      await setAuthTokens(user._id, res);
+      console.log('[Apogee Auth] setAuthTokens completed successfully');
+    } catch (tokenErr) {
+      console.error('[Apogee Auth] setAuthTokens FAILED:', tokenErr.message, tokenErr.stack);
+      throw tokenErr;
+    }
 
     // Debug: Log what cookies were set
     const setCookieHeaders = res.getHeaders()['set-cookie'];
