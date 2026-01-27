@@ -133,4 +133,72 @@ router.get('/apogee', async (req, res) => {
   }
 });
 
+/**
+ * GET /auth/apogee-test
+ * Test login endpoint - bypasses SSO for testing session creation
+ * Only available when APOGEE_TEST_LOGIN_SECRET is set
+ */
+router.get('/apogee-test', async (req, res) => {
+  const testSecret = process.env.APOGEE_TEST_LOGIN_SECRET;
+  if (!testSecret) {
+    return res.status(404).json({ error: 'Not found' });
+  }
+
+  const { secret, email: testEmail } = req.query;
+  if (secret !== testSecret) {
+    return res.status(401).json({ error: 'Invalid secret' });
+  }
+
+  const email = testEmail || 'test@apogee-test.com';
+  console.log(`[Apogee Test Auth] Test login for: ${email}`);
+
+  try {
+    const { findUser, createUser } = require('~/models');
+    const { setAuthTokens } = require('~/server/services/AuthService');
+
+    const normalizedEmail = email.toLowerCase();
+    let user = await findUser({ email: normalizedEmail });
+
+    if (!user) {
+      const userData = {
+        email: normalizedEmail,
+        name: email.split('@')[0],
+        username: normalizedEmail,
+        provider: 'apogee-test',
+        providerId: `test-${Date.now()}`,
+        emailVerified: true,
+        password: require('crypto').randomBytes(32).toString('hex'),
+      };
+
+      user = await createUser(userData, true, true);
+      console.log(`[Apogee Test Auth] Created test user: ${email}`);
+    } else {
+      console.log(`[Apogee Test Auth] Found existing user: ${email}`);
+    }
+
+    console.log('[Apogee Test Auth] Calling setAuthTokens for user:', user._id.toString());
+    try {
+      await setAuthTokens(user._id, res);
+      console.log('[Apogee Test Auth] setAuthTokens completed successfully');
+    } catch (tokenErr) {
+      console.error('[Apogee Test Auth] setAuthTokens FAILED:', tokenErr.message, tokenErr.stack);
+      return res.status(500).json({ error: 'Session creation failed', details: tokenErr.message });
+    }
+
+    const setCookieHeaders = res.getHeaders()['set-cookie'];
+    console.log('[Apogee Test Auth] Set-Cookie headers:', JSON.stringify(setCookieHeaders, null, 2));
+
+    // Return JSON response for test verification
+    res.json({
+      success: true,
+      userId: user._id.toString(),
+      email: user.email,
+      cookies: setCookieHeaders ? setCookieHeaders.map(c => c.split(';')[0]) : [],
+    });
+  } catch (err) {
+    console.error('[Apogee Test Auth] Error:', err.message, err.stack);
+    res.status(500).json({ error: 'Test auth failed', details: err.message });
+  }
+});
+
 module.exports = router;
