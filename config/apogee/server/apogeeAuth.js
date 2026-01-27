@@ -101,6 +101,26 @@ router.get('/apogee', async (req, res) => {
     try {
       await setAuthTokens(user._id, res);
       console.log('[Apogee Auth] setAuthTokens completed successfully');
+
+      // Verify session was saved by reading it back
+      const { findSession } = require('~/models');
+      const refreshCookie = res.getHeaders()['set-cookie']?.find(c => c.startsWith('refreshToken='));
+      if (refreshCookie) {
+        const tokenMatch = refreshCookie.match(/refreshToken=([^;]+)/);
+        if (tokenMatch) {
+          const token = tokenMatch[1];
+          // Decode JWT to get sessionId
+          const decoded = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+          console.log('[Apogee Auth] Session ID from token:', decoded.sessionId);
+
+          // Try to find the session in DB
+          const session = await findSession({ sessionId: decoded.sessionId });
+          console.log('[Apogee Auth] Session found in DB:', session ? 'YES' : 'NO');
+          if (!session) {
+            console.error('[Apogee Auth] CRITICAL: Session was not saved to database!');
+          }
+        }
+      }
     } catch (tokenErr) {
       console.error('[Apogee Auth] setAuthTokens FAILED:', tokenErr.message, tokenErr.stack);
       throw tokenErr;
