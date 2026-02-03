@@ -491,7 +491,7 @@ const ANONYMOUS_INDICATOR_SCRIPT = `
             </svg>
           </div>
 
-          <h2>You've used your 5 free prompts</h2>
+          <h2>Sign up to continue</h2>
           <p class="subtitle">Enter your work email to sign up and continue the conversation. No credit card required.</p>
 
           <div class="email-form">
