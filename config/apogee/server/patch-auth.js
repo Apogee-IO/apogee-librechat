@@ -1,14 +1,18 @@
 /**
- * Patch LibreChat to include Apogee SSO route and redirect middleware
+ * Patch LibreChat to include Apogee SSO route, redirect middleware, and prompt tracking
  *
  * This script is run at startup before the main server starts.
  * It modifies the server routes to include:
  * 1. Custom auth endpoint for SSO
  * 2. Redirect middleware for unauthenticated users
+ * 3. Prompt counter middleware for anonymous users
+ * 4. Anonymous user banner injection
  */
 
 const fs = require('fs');
 const path = require('path');
+const { promptCounterMiddleware } = require('./promptCounter');
+const { injectAnonymousIndicator } = require('./anonymousIndicator');
 
 const ROUTES_FILE = '/app/api/server/routes/index.js';
 const AUTH_ROUTES_FILE = '/app/api/server/routes/auth.js';
@@ -361,11 +365,163 @@ async function patchCookieSameSite() {
   console.log('[Apogee Patch] Successfully patched cookie SameSite to lax');
 }
 
+/**
+ * Patch the Ask/Chat routes to include prompt counter middleware
+ * This intercepts chat requests for anonymous users to track and limit prompts
+ */
+async function patchPromptCounter() {
+  const PROMPT_COUNTER_MARKER = '// APOGEE_PROMPT_COUNTER_PATCH';
+
+  // Possible locations for the ask/chat route handlers
+  const askRouteFiles = [
+    '/app/api/server/routes/ask/index.js',
+    '/app/api/server/routes/ask.js',
+    '/app/api/server/routes/chat.js',
+    '/app/api/server/routes/messages.js',
+  ];
+
+  let patchedAny = false;
+
+  for (const filePath of askRouteFiles) {
+    if (!fs.existsSync(filePath)) continue;
+
+    let content = fs.readFileSync(filePath, 'utf-8');
+
+    // Check if already patched
+    if (content.includes(PROMPT_COUNTER_MARKER)) {
+      console.log('[Apogee Patch] Prompt counter already applied to', filePath);
+      patchedAny = true;
+      continue;
+    }
+
+    console.log(`[Apogee Patch] Adding prompt counter middleware to ${filePath}...`);
+
+    // Add import at the top
+    const importLine = `\n${PROMPT_COUNTER_MARKER}\nconst { promptCounterMiddleware } = require('/app/apogee-server/promptCounter');\n`;
+
+    // Insert import after existing requires
+    if (content.includes("require('express')")) {
+      content = content.replace(
+        /const\s+.*\s*=\s*require\(['"]express['"]\);?/,
+        match => match + importLine
+      );
+    } else if (content.includes('const express')) {
+      content = content.replace(
+        /const\s+express\s*=/,
+        match => importLine + match
+      );
+    } else {
+      // Add at top
+      content = importLine + content;
+    }
+
+    // Add middleware to the router
+    // Pattern 1: router.post('/', ...)
+    if (content.includes("router.post('/',") || content.includes('router.post("/",')) {
+      content = content.replace(
+        /router\.post\(['"]\/['"],?\s*/g,
+        match => match + 'promptCounterMiddleware, '
+      );
+    }
+    // Pattern 2: app.post('/api/ask', ...)
+    else if (content.includes("app.post('/api/ask") || content.includes("app.post('/api/chat")) {
+      content = content.replace(
+        /app\.post\(['"]\/api\/(ask|chat|messages)['"],?\s*/g,
+        match => match + 'promptCounterMiddleware, '
+      );
+    }
+    // Pattern 3: Just add as a general middleware if we can find router definition
+    else if (content.includes('const router = ') || content.includes('const router=')) {
+      const routerDefMatch = content.match(/const\s+router\s*=\s*[^;]+;/);
+      if (routerDefMatch) {
+        const insertPoint = content.indexOf(routerDefMatch[0]) + routerDefMatch[0].length;
+        content = content.slice(0, insertPoint) +
+          '\n\n// Apogee prompt counter for anonymous users\nrouter.use(promptCounterMiddleware);\n' +
+          content.slice(insertPoint);
+      }
+    }
+
+    fs.writeFileSync(filePath, content);
+    console.log('[Apogee Patch] Added prompt counter middleware to', filePath);
+    patchedAny = true;
+  }
+
+  // Alternative: Add as Express app-level middleware if no route files found
+  if (!patchedAny) {
+    console.log('[Apogee Patch] No ask route files found, attempting app-level middleware...');
+
+    const appFiles = [
+      '/app/api/server/index.js',
+      '/app/api/app.js',
+    ];
+
+    for (const filePath of appFiles) {
+      if (!fs.existsSync(filePath)) continue;
+
+      let content = fs.readFileSync(filePath, 'utf-8');
+
+      if (content.includes(PROMPT_COUNTER_MARKER)) {
+        console.log('[Apogee Patch] Prompt counter already applied to', filePath);
+        return;
+      }
+
+      console.log(`[Apogee Patch] Adding prompt counter middleware to ${filePath}...`);
+
+      // Add import
+      const importLine = `\n${PROMPT_COUNTER_MARKER}\nconst { promptCounterMiddleware } = require('/app/apogee-server/promptCounter');\n`;
+
+      if (content.includes("require('express')")) {
+        content = content.replace(
+          /const\s+.*\s*=\s*require\(['"]express['"]\);?/,
+          match => match + importLine
+        );
+      } else {
+        content = importLine + content;
+      }
+
+      // Add middleware before API routes (after passport initialization)
+      if (content.includes('app.use(passport.initialize())')) {
+        content = content.replace(
+          /app\.use\(passport\.initialize\(\)\);?/,
+          match => match + '\n\n// Apogee prompt counter for anonymous users\napp.use(promptCounterMiddleware);'
+        );
+      } else if (content.includes("app.use('/api")) {
+        content = content.replace(
+          /app\.use\(['"]\/api/,
+          '// Apogee prompt counter for anonymous users\napp.use(promptCounterMiddleware);\n\napp.use(\'/api'
+        );
+      }
+
+      fs.writeFileSync(filePath, content);
+      console.log('[Apogee Patch] Added prompt counter middleware to', filePath);
+      return;
+    }
+
+    console.warn('[Apogee Patch] Could not find any file to add prompt counter middleware');
+  }
+}
+
+/**
+ * Inject the anonymous user indicator script into the frontend
+ */
+async function patchAnonymousIndicator() {
+  try {
+    const success = injectAnonymousIndicator();
+    if (!success) {
+      console.warn('[Apogee Patch] Could not inject anonymous indicator');
+    }
+  } catch (err) {
+    console.error('[Apogee Patch] Error injecting anonymous indicator:', err.message);
+  }
+}
+
 // Run the patches
 async function runPatches() {
   await patchRoutes();
   await patchRedirectMiddleware();
   await patchCookieSameSite();
+  await patchPromptCounter();
+  await patchAnonymousIndicator();
 }
 
 runPatches().catch(err => {
