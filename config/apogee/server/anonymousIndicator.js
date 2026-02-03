@@ -354,9 +354,11 @@ const ANONYMOUS_INDICATOR_SCRIPT = `
 
     const container = document.createElement('div');
     container.id = 'apogee-auth-buttons';
+    // Include return_to=/api/auth/chat so users are redirected back to chat via SSO after auth
+    const returnTo = encodeURIComponent('/api/auth/chat');
     container.innerHTML = \`
-      <a href="\${DASHBOARD_URL}/auth/login" class="btn btn-login">Log in</a>
-      <a href="\${DASHBOARD_URL}/auth/login?signup=true" class="btn btn-signup">Sign up for free</a>
+      <a href="\${DASHBOARD_URL}/auth/login?return_to=\${returnTo}" class="btn btn-login">Log in</a>
+      <a href="\${DASHBOARD_URL}/auth/login?signup=true&return_to=\${returnTo}" class="btn btn-signup">Sign up for free</a>
     \`;
 
     document.body.appendChild(container);
@@ -508,7 +510,7 @@ const ANONYMOUS_INDICATOR_SCRIPT = `
 
           <div class="divider"><span>Already have an account?</span></div>
 
-          <a href="\${DASHBOARD_URL}/auth/login" class="login-link">Log in</a>
+          <a href="\${DASHBOARD_URL}/auth/login?return_to=%2Fapi%2Fauth%2Fchat" class="login-link">Log in</a>
 
           <p class="fine-print">
             By signing up, you agree to our
@@ -516,18 +518,6 @@ const ANONYMOUS_INDICATOR_SCRIPT = `
             and
             <a href="\${DASHBOARD_URL}/privacy" target="_blank">Privacy Policy</a>.
           </p>
-        </div>
-
-        <div id="apogee-success-view" style="display: none;">
-          <div class="success-icon">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#0f766e" stroke-width="2">
-              <rect x="3" y="5" width="18" height="14" rx="2"/>
-              <polyline points="3 7 12 13 21 7"/>
-            </svg>
-          </div>
-          <h2>Check your email</h2>
-          <p class="subtitle" id="apogee-email-sent-to">We sent a sign-in link to your email.</p>
-          <a href="\${DASHBOARD_URL}/auth/login" class="login-link" style="margin-top: 24px;">Open Login Page</a>
         </div>
       </div>
     \`;
@@ -555,7 +545,7 @@ const ANONYMOUS_INDICATOR_SCRIPT = `
       }
     });
 
-    submitBtn.addEventListener('click', async () => {
+    submitBtn.addEventListener('click', () => {
       const email = emailInput.value.trim();
 
       // Basic validation
@@ -565,39 +555,11 @@ const ANONYMOUS_INDICATOR_SCRIPT = `
         return;
       }
 
-      errorDiv.style.display = 'none';
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'Sending...';
-
-      try {
-        const response = await fetch(\`\${DASHBOARD_URL}/api/auth/login\`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email,
-            returnTo: window.location.href
-          })
-        });
-
-        const result = await response.json();
-
-        if (response.ok) {
-          // Show success view
-          document.getElementById('apogee-form-view').style.display = 'none';
-          document.getElementById('apogee-success-view').style.display = 'block';
-          document.getElementById('apogee-email-sent-to').textContent = \`We sent a sign-in code to \${email}\`;
-        } else {
-          errorDiv.textContent = result.message || 'Failed to send code. Please try again.';
-          errorDiv.style.display = 'block';
-          submitBtn.disabled = false;
-          submitBtn.textContent = 'Continue with Email';
-        }
-      } catch (err) {
-        errorDiv.textContent = 'Network error. Please try again.';
-        errorDiv.style.display = 'block';
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Continue with Email';
-      }
+      // Redirect to signup page with email pre-filled
+      // Use /api/auth/chat as return_to so users are redirected back to chat via SSO after auth
+      const returnTo = encodeURIComponent('/api/auth/chat');
+      const encodedEmail = encodeURIComponent(email);
+      window.location.href = \`\${DASHBOARD_URL}/auth/login?signup=true&email=\${encodedEmail}&return_to=\${returnTo}\`;
     });
   }
 
