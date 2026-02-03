@@ -68,13 +68,11 @@ async function checkAndIncrementPrompt(sessionId) {
  * @param {function} next - Next middleware function
  */
 async function promptCounterMiddleware(req, res, next) {
-  // Only apply to chat/ask endpoints
-  const path = req.path || req.url || '';
-  const isChatEndpoint = path.includes('/ask') ||
-                         path.includes('/chat') ||
-                         path.includes('/messages');
+  // Debug logging
+  console.log('[Apogee Prompt Counter] Middleware called, path:', req.path, 'method:', req.method);
 
-  if (!isChatEndpoint) {
+  // Only apply to POST requests (chat submissions)
+  if (req.method !== 'POST') {
     return next();
   }
 

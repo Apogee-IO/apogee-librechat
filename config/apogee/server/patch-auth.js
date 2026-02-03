@@ -378,6 +378,7 @@ async function patchPromptCounter() {
     '/app/api/server/routes/ask.js',
     '/app/api/server/routes/chat.js',
     '/app/api/server/routes/messages.js',
+    '/app/api/server/routes/agents/chat.js',  // Main chat endpoint for agents
   ];
 
   let patchedAny = false;
@@ -416,10 +417,17 @@ async function patchPromptCounter() {
     }
 
     // Add middleware to the router
-    // Pattern 1: router.post('/', ...)
-    if (content.includes("router.post('/',") || content.includes('router.post("/",')) {
+    // Pattern 1: router.post('/', ...) and router.post('/:endpoint', ...)
+    if (content.includes("router.post('/',") || content.includes('router.post("/",') ||
+        content.includes("router.post('/:endpoint") || content.includes('router.post("/:endpoint')) {
+      // Add to root route
       content = content.replace(
         /router\.post\(['"]\/['"],?\s*/g,
+        match => match + 'promptCounterMiddleware, '
+      );
+      // Add to parametric routes like /:endpoint
+      content = content.replace(
+        /router\.post\(['"]\/:endpoint['"],?\s*/g,
         match => match + 'promptCounterMiddleware, '
       );
     }
