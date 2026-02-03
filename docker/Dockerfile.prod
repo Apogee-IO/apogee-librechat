@@ -1,7 +1,18 @@
 # Apogee LibreChat Production Dockerfile
 # Extends official LibreChat image with Apogee configuration
+#
+# VERSION PINNING STRATEGY:
+# - Pin to specific version to prevent patches from breaking
+# - Before updating: rebuild locally, test all patches, run E2E tests
+# - Patches that may break on update:
+#   - apogee-server/apogeeAuth.js (SSO auth)
+#   - apogee-server/patch-auth.js (auth modifications)
+#   - apogee-server/promptCounter.js (prompt tracking)
+#   - apogee-server/anonymousIndicator.js (UI injection)
+#
+# Last tested: 2026-02-03 with v0.8.2-rc3
 
-FROM ghcr.io/danny-avila/librechat:latest
+FROM ghcr.io/danny-avila/librechat:v0.8.2-rc3
 
 # Copy Apogee configuration
 COPY config/apogee/librechat.yaml /app/librechat.yaml
