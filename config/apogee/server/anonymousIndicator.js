@@ -57,6 +57,46 @@ const ANONYMOUS_INDICATOR_SCRIPT = `
     }
   }
 
+  // Check if current user is an admin (Apogee team member)
+  // Admins have full access to the side panel
+  function isAdminUser() {
+    try {
+      const userStr = localStorage.getItem('user');
+      if (!userStr) return false;
+      const user = JSON.parse(userStr);
+      if (!user.email) return false;
+
+      // Admin users are Apogee team members
+      const adminDomains = ['@apog.ai', '@apogee.io'];
+      return adminDomains.some(domain => user.email.endsWith(domain));
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Hide the right side panel for non-admin users
+  function hideSidePanelForNonAdmins() {
+    if (isAdminUser()) return;
+    if (document.getElementById('apogee-hide-sidepanel-styles')) return;
+
+    const styles = document.createElement('style');
+    styles.id = 'apogee-hide-sidepanel-styles';
+    styles.textContent = \`
+      /* Hide the right side panel (controls nav) for non-admin users */
+      #controls-nav,
+      #controls-nav + [data-panel-resize-handle-id],
+      .sidenav {
+        display: none !important;
+      }
+
+      /* Also hide the toggle button for the side panel */
+      button[aria-label*="Toggle"] {
+        display: none !important;
+      }
+    \`;
+    document.head.appendChild(styles);
+  }
+
   // Inject styles once
   function injectStyles() {
     if (document.getElementById('apogee-styles')) return;
@@ -571,10 +611,12 @@ const ANONYMOUS_INDICATOR_SCRIPT = `
       document.addEventListener('DOMContentLoaded', () => {
         injectAuthButtons();
         setupErrorInterceptor();
+        hideSidePanelForNonAdmins();
       });
     } else {
       injectAuthButtons();
       setupErrorInterceptor();
+      hideSidePanelForNonAdmins();
     }
 
     // Check periodically in case of SPA navigation
@@ -582,6 +624,8 @@ const ANONYMOUS_INDICATOR_SCRIPT = `
       if (isAnonymousUser() && !document.getElementById('apogee-auth-buttons')) {
         injectAuthButtons();
       }
+      // Re-check side panel visibility (user info may load async)
+      hideSidePanelForNonAdmins();
     }, 2000);
   }
 
