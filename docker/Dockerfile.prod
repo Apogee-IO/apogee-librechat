@@ -20,6 +20,12 @@ COPY config/apogee/librechat.yaml /app/librechat.yaml
 # Copy branding assets
 COPY config/apogee/branding/ /app/client/public/images/branding/
 
+# Replace favicon and apple touch icon with Apogee icon
+COPY config/apogee/branding/assets/favicon-32x32.png /app/client/dist/assets/favicon-32x32.png
+COPY config/apogee/branding/assets/favicon-16x16.png /app/client/dist/assets/favicon-16x16.png
+COPY config/apogee/branding/assets/apple-touch-icon-180x180.png /app/client/dist/assets/apple-touch-icon-180x180.png
+COPY config/apogee/branding/assets/nodes.svg /app/client/dist/assets/nodes.svg
+
 # Copy custom Apogee SSO server files
 COPY config/apogee/server/ /app/apogee-server/
 
