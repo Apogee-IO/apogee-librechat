@@ -74,6 +74,9 @@ mcpServers:
     url: ${MCP_GATEWAY_URL:-http://gateway:3001}/mcp
     timeout: 60000
     initTimeout: 10000
+    headers:
+      x-internal-secret: "${INTERNAL_API_SECRET}"
+      x-user-email: "{{LIBRECHAT_USER_EMAIL}}"
 
 # Registration settings
 registration:

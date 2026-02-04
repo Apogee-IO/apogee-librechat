@@ -138,13 +138,16 @@ const ANONYMOUS_INDICATOR_SCRIPT = `
 
   // Positively confirm the user is logged in with a real (non-anonymous) account.
   // Returns false if user data hasn't loaded yet (unknown state).
+  // LibreChat doesn't store user data in localStorage, so we check the DOM:
+  // the nav-user element renders the username even while hidden by CSS.
   function isConfirmedLoggedIn() {
     try {
-      var userStr = localStorage.getItem('user');
-      if (!userStr) return false;
-      var user = JSON.parse(userStr);
-      if (!user.email) return false;
-      if (user.email.includes('@anonymous.apog.ai')) return false;
+      var navUser = document.querySelector('[data-testid="nav-user"]');
+      if (!navUser) return false;
+      var text = (navUser.textContent || '').trim();
+      if (!text) return false;
+      // Anonymous users show as "Guest User" or contain "anonymous"
+      if (text === 'Guest User' || text.toLowerCase().indexOf('anonymous') !== -1 || text.toLowerCase().indexOf('guest') !== -1) return false;
       return true;
     } catch (e) {
       return false;
@@ -224,6 +227,15 @@ const ANONYMOUS_INDICATOR_SCRIPT = `
   function injectStyles() {
     if (document.getElementById('apogee-styles')) return;
 
+    // Load Merriweather serif font from Google Fonts
+    if (!document.getElementById('apogee-google-fonts')) {
+      var fontLink = document.createElement('link');
+      fontLink.id = 'apogee-google-fonts';
+      fontLink.rel = 'stylesheet';
+      fontLink.href = 'https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;0,900;1,300;1,400;1,700;1,900&display=swap';
+      document.head.appendChild(fontLink);
+    }
+
     const styles = document.createElement('style');
     styles.id = 'apogee-styles';
     styles.textContent = \`
@@ -250,14 +262,14 @@ const ANONYMOUS_INDICATOR_SCRIPT = `
       }
 
       #apogee-auth-buttons .btn-login {
-        background: transparent;
+        background: #fff;
         color: #374151;
-        border: 1px solid #d1d5db;
+        border: 1px solid #e3e3e3;
       }
 
       #apogee-auth-buttons .btn-login:hover {
-        background: #f3f4f6;
-        border-color: #9ca3af;
+        background: #e3e3e3;
+        border-color: #d1d5db;
       }
 
       #apogee-auth-buttons .btn-signup {
@@ -272,26 +284,28 @@ const ANONYMOUS_INDICATOR_SCRIPT = `
       /* Dark mode support */
       @media (prefers-color-scheme: dark) {
         #apogee-auth-buttons .btn-login {
+          background: #212121;
           color: #e5e7eb;
-          border-color: #4b5563;
+          border-color: #2f2f2f;
         }
         #apogee-auth-buttons .btn-login:hover {
-          background: #374151;
-          border-color: #6b7280;
+          background: #2f2f2f;
+          border-color: #424242;
         }
       }
 
       /* LibreChat dark mode detection */
       .dark #apogee-auth-buttons .btn-login,
       [data-theme="dark"] #apogee-auth-buttons .btn-login {
+        background: #212121;
         color: #e5e7eb;
-        border-color: #4b5563;
+        border-color: #2f2f2f;
       }
 
       .dark #apogee-auth-buttons .btn-login:hover,
       [data-theme="dark"] #apogee-auth-buttons .btn-login:hover {
-        background: #374151;
-        border-color: #6b7280;
+        background: #2f2f2f;
+        border-color: #424242;
       }
 
       /* Modal styles */
@@ -507,6 +521,40 @@ const ANONYMOUS_INDICATOR_SCRIPT = `
         text-decoration: underline;
       }
 
+      /* Hide the MCP server selection chip in the badge row */
+      /* Targets the Ariakit MenuButton with rounded-full pill styling */
+      button[aria-haspopup="menu"].rounded-full.border-border-medium {
+        display: none !important;
+      }
+
+      /* Hide the portalled MCP server menu dropdown */
+      [role="menu"][aria-label="MCP Servers"] {
+        display: none !important;
+      }
+
+      /* Hide the Web Search badge in the badge row */
+      button[aria-label="Search"].rounded-full,
+      button[aria-label="Search..."].rounded-full {
+        display: none !important;
+      }
+
+      /* Hide the Code Interpreter badge in the badge row */
+      button[aria-label="Code Interpreter"].rounded-full,
+      button[aria-label="Code"].rounded-full {
+        display: none !important;
+      }
+
+      /* Hide the Artifacts badge and its mode dropdown chevron */
+      button[aria-label="Artifacts"].rounded-full,
+      button.rounded-l-none.rounded-r-full.w-7 {
+        display: none !important;
+      }
+
+      /* Hide the Tools Options menu button (all tool toggles are forced, menu is empty) */
+      button[aria-label="Tools Options"] {
+        display: none !important;
+      }
+
       /* Hide the search/filter field in the model selector dropdown */
       #model-search,
       #model-search + label {
@@ -521,6 +569,64 @@ const ANONYMOUS_INDICATOR_SCRIPT = `
       /* Hide endpoint icons in the sidebar conversation list */
       [data-testid="convo-icon"] {
         display: none !important;
+      }
+
+      /* Style the export/share button to match nav buttons (no border, transparent bg) */
+      #export-menu-button {
+        border: none !important;
+        background: transparent !important;
+      }
+      #export-menu-button:hover {
+        background: var(--surface-active-alt) !important;
+      }
+
+      /* Serif font for conversation message content and headings */
+      .message-content,
+      .message-content h1,
+      .message-content h2,
+      .message-content h3,
+      .message-content h4,
+      .message-content h5,
+      .message-content h6 {
+        font-family: "Merriweather", Georgia, serif !important;
+        font-weight: 300 !important;
+      }
+
+      /* Serif font for the landing page greeting text */
+      p.split-parent {
+        font-family: "Merriweather", Georgia, serif !important;
+      }
+
+      /* Keep monospace font for code blocks within messages */
+      .message-content code,
+      .message-content pre,
+      .message-content pre code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
+      }
+
+      /* Hide per-message avatars and sender name headings */
+      .message-render > .flex-shrink-0.items-center:first-child {
+        display: none !important;
+      }
+      .message-render .user-turn h2,
+      .message-render .agent-turn h2 {
+        display: none !important;
+      }
+
+      /* Right-align user messages */
+      .message-render:has(.user-turn) {
+        justify-content: flex-end;
+      }
+      .user-turn {
+        align-items: flex-end;
+      }
+
+      /* Softer text color — off-black in light mode, off-white in dark mode */
+      .message-content {
+        color: #2d2d2d !important;
+      }
+      html.dark .message-content {
+        color: #d4d4d4 !important;
       }
     \`;
     document.head.appendChild(styles);
@@ -742,9 +848,239 @@ const ANONYMOUS_INDICATOR_SCRIPT = `
     });
   }
 
+  // Force Apogee MCP server to always be selected.
+  // LibreChat stores MCP selections per-conversation in localStorage as LAST_MCP_{id}.
+  // We intercept localStorage writes to ensure "apogee" is never removed,
+  // and pre-seed the "new conversation" key so it starts selected.
+  function forceMCPSelection() {
+    var defaultSelection = '["apogee"]';
+
+    // Ensure MCP is "pinned" (required for the atom to initialize with selection)
+    try {
+      localStorage.setItem('PIN_MCP_', 'true');
+    } catch (e) {}
+
+    // Ensure the "new conversation" key always has apogee selected
+    var newKey = 'LAST_MCP_new';
+    try {
+      var current = localStorage.getItem(newKey);
+      if (!current || current.indexOf('apogee') === -1) {
+        localStorage.setItem(newKey, defaultSelection);
+      }
+    } catch (e) {}
+
+    // Scan existing conversation keys and ensure apogee is always included
+    try {
+      for (var i = 0; i < localStorage.length; i++) {
+        var key = localStorage.key(i);
+        if (key && key.indexOf('LAST_MCP_') === 0) {
+          var val = JSON.parse(localStorage.getItem(key) || '[]');
+          if (Array.isArray(val) && val.indexOf('apogee') === -1) {
+            val.push('apogee');
+            localStorage.setItem(key, JSON.stringify(val));
+          }
+        }
+      }
+    } catch (e) {}
+
+    // Intercept localStorage.setItem to prevent removing "apogee" from MCP selections
+    if (!window._apogeeMCPInterceptor) {
+      window._apogeeMCPInterceptor = true;
+      var origSetItem = Storage.prototype.setItem;
+      Storage.prototype.setItem = function(key, value) {
+        if (key && key.indexOf('LAST_MCP_') === 0) {
+          try {
+            var arr = JSON.parse(value);
+            if (Array.isArray(arr) && arr.indexOf('apogee') === -1) {
+              arr.push('apogee');
+              return origSetItem.call(this, key, JSON.stringify(arr));
+            }
+          } catch (e) {}
+        }
+        // Force web search to stay enabled
+        if (key && key.indexOf('LAST_WEB_SEARCH_TOGGLE_') === 0) {
+          return origSetItem.call(this, key, 'true');
+        }
+        // Force code interpreter to stay disabled
+        if (key && key.indexOf('LAST_CODE_TOGGLE_') === 0) {
+          return origSetItem.call(this, key, 'false');
+        }
+        // Force artifacts to stay enabled (shadcn_ui mode)
+        if (key && key.indexOf('LAST_ARTIFACTS_TOGGLE_') === 0 && key !== 'LAST_ARTIFACTS_TOGGLEpinned') {
+          return origSetItem.call(this, key, '"shadcn_ui"');
+        }
+        // Force thoughts/reasoning to stay collapsed
+        if (key === 'showThinking') {
+          return origSetItem.call(this, key, 'false');
+        }
+        return origSetItem.call(this, key, value);
+      };
+    }
+  }
+
+  // Force web search to always be enabled.
+  // Sets localStorage state and prevents toggling off via interceptor.
+  function forceWebSearchEnabled() {
+    try { localStorage.setItem('PIN_WEB_SEARCH_', 'true'); } catch (e) {}
+    try {
+      localStorage.setItem('LAST_WEB_SEARCH_TOGGLE_new', 'true');
+    } catch (e) {}
+    try {
+      for (var i = 0; i < localStorage.length; i++) {
+        var key = localStorage.key(i);
+        if (key && key.indexOf('LAST_WEB_SEARCH_TOGGLE_') === 0) {
+          if (localStorage.getItem(key) !== 'true') {
+            localStorage.setItem(key, 'true');
+          }
+        }
+      }
+    } catch (e) {}
+  }
+
+  // Disable code interpreter for all users.
+  // Prevents enabling via localStorage interceptor.
+  function disableCodeInterpreter() {
+    try { localStorage.setItem('PIN_CODE_INTERPRETER_', 'false'); } catch (e) {}
+    try {
+      localStorage.setItem('LAST_CODE_TOGGLE_new', 'false');
+    } catch (e) {}
+    try {
+      for (var i = 0; i < localStorage.length; i++) {
+        var key = localStorage.key(i);
+        if (key && key.indexOf('LAST_CODE_TOGGLE_') === 0) {
+          if (localStorage.getItem(key) !== 'false') {
+            localStorage.setItem(key, 'false');
+          }
+        }
+      }
+    } catch (e) {}
+  }
+
+  // Force artifacts to always be enabled in shadcn_ui mode.
+  function forceArtifactsEnabled() {
+    try { localStorage.setItem('LAST_ARTIFACTS_TOGGLEpinned', 'true'); } catch (e) {}
+    try {
+      localStorage.setItem('LAST_ARTIFACTS_TOGGLE_new', '"shadcn_ui"');
+    } catch (e) {}
+    try {
+      for (var i = 0; i < localStorage.length; i++) {
+        var key = localStorage.key(i);
+        if (key && key.indexOf('LAST_ARTIFACTS_TOGGLE_') === 0 && key !== 'LAST_ARTIFACTS_TOGGLEpinned') {
+          var val = localStorage.getItem(key);
+          if (val !== '"shadcn_ui"') {
+            localStorage.setItem(key, '"shadcn_ui"');
+          }
+        }
+      }
+    } catch (e) {}
+  }
+
+  // Force thoughts/reasoning sections to be collapsed by default.
+  // LibreChat uses localStorage key 'showThinking' (Jotai atomWithStorage).
+  function forceThoughtsCollapsed() {
+    try {
+      localStorage.setItem('showThinking', 'false');
+    } catch (e) {}
+  }
+
+  // Hide MCP-related UI elements that CSS can't easily target (e.g. MCPSubMenu in ToolsDropdown).
+  // Uses a MutationObserver so items are hidden immediately when menus open, not on interval delay.
+  function hideMCPSubMenu() {
+    // Scan and hide MCP Servers, Web Search, Code Interpreter, and Artifacts menu items
+    document.querySelectorAll('[role="menuitem"]').forEach(function(item) {
+      var text = item.textContent || '';
+      if (text.indexOf('MCP') !== -1 && text.indexOf('Server') !== -1) {
+        item.style.display = 'none';
+      }
+      if (text.indexOf('Web') !== -1 && text.indexOf('Search') !== -1) {
+        item.style.display = 'none';
+      }
+      if (text.indexOf('Code') !== -1 && text.indexOf('Interpreter') !== -1) {
+        item.style.display = 'none';
+      }
+      if (text.trim() === 'Artifacts') {
+        item.style.display = 'none';
+      }
+    });
+  }
+
+  // Replace the Share2 icon in the export menu button with an iOS-style share icon
+  function patchShareIcon() {
+    var btn = document.getElementById('export-menu-button');
+    if (!btn || btn._apogeeSharePatched) return;
+    var svg = btn.querySelector('svg');
+    if (!svg) return;
+    btn._apogeeSharePatched = true;
+    svg.innerHTML = '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/>';
+  }
+
+  // Inject a permanent "New chat" item at the top of the nav drawer chat list.
+  // Placed above the virtualized conversation list so React doesn't destroy it.
+  function injectNewChatItem() {
+    if (document.getElementById('apogee-new-chat-item')) return;
+
+    // Find the conversations container inside chat-history-nav.
+    // Structure: nav#chat-history-nav > div.flex > [header] + [conversations container]
+    var nav = document.getElementById('chat-history-nav');
+    if (!nav) return;
+
+    // The conversations area is the .flex.min-h-0.flex-grow div
+    var conversationsContainer = nav.querySelector('.flex.min-h-0.flex-grow');
+    if (!conversationsContainer) return;
+
+    var item = document.createElement('div');
+    item.id = 'apogee-new-chat-item';
+    item.className = 'group relative flex h-9 w-full items-center rounded-lg hover:bg-surface-active-alt cursor-pointer text-text-primary';
+    item.setAttribute('role', 'button');
+    item.setAttribute('tabindex', '0');
+    item.setAttribute('aria-label', 'New chat');
+    item.style.cssText = 'flex-shrink: 0; margin-bottom: 2px;';
+
+    item.innerHTML = '<div class="flex grow items-center gap-2 overflow-hidden rounded-lg px-2" style="width:100%">'
+      + '<svg class="flex-shrink-0" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+      + '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>'
+      + '</svg>'
+      + '<span class="relative flex-1 grow overflow-hidden whitespace-nowrap text-sm text-text-primary">New chat</span>'
+      + '</div>';
+
+    item.addEventListener('click', function(e) {
+      if (e.button === 0 && (e.ctrlKey || e.metaKey)) {
+        window.open('/c/new', '_blank');
+      } else {
+        window.location.href = '/c/new';
+      }
+    });
+    item.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        window.location.href = '/c/new';
+      }
+    });
+
+    // Insert before the conversations container (above the virtualized list)
+    conversationsContainer.parentNode.insertBefore(item, conversationsContainer);
+  }
+
+  // Watch for portalled menus being added to the DOM (Ariakit renders menus as portals)
+  function setupUIHidingObserver() {
+    if (window._apogeeUIObserver) return;
+    window._apogeeUIObserver = true;
+    var observer = new MutationObserver(function() {
+      hideMCPSubMenu();
+      patchShareIcon();
+      injectNewChatItem();
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+  }
+
   // Initialize when DOM is ready
   function init() {
     injectStyles();
+    forceMCPSelection();
+    forceWebSearchEnabled();
+    disableCodeInterpreter();
+    forceArtifactsEnabled();
+    forceThoughtsCollapsed();
 
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', () => {
@@ -754,6 +1090,10 @@ const ANONYMOUS_INDICATOR_SCRIPT = `
         patchChatPlaceholder();
         patchSenderAndIcon();
         showUserMenuIfLoggedIn();
+        hideMCPSubMenu();
+        patchShareIcon();
+        injectNewChatItem();
+        setupUIHidingObserver();
       });
     } else {
       injectAuthButtons();
@@ -762,6 +1102,10 @@ const ANONYMOUS_INDICATOR_SCRIPT = `
       patchChatPlaceholder();
       patchSenderAndIcon();
       showUserMenuIfLoggedIn();
+      hideMCPSubMenu();
+      patchShareIcon();
+      injectNewChatItem();
+      setupUIHidingObserver();
     }
 
     // Check periodically in case of SPA navigation
@@ -777,6 +1121,13 @@ const ANONYMOUS_INDICATOR_SCRIPT = `
       patchSenderAndIcon();
       // Show user menu once logged-in status is confirmed (user info may load async)
       showUserMenuIfLoggedIn();
+      // Ensure MCP stays selected, web search stays on, code interpreter stays off
+      forceMCPSelection();
+      forceWebSearchEnabled();
+      disableCodeInterpreter();
+      forceArtifactsEnabled();
+      hideMCPSubMenu();
+      injectNewChatItem();
     }, 2000);
   }
 
