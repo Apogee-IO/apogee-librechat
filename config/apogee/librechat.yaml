@@ -93,6 +93,7 @@ interface:
   agents: false
   multiConvo: false
   webSearch: true
+  fileSearch: false
   bookmarks: false
 
 # Disable voice features (STT/TTS)

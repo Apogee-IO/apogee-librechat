@@ -517,6 +517,11 @@ const ANONYMOUS_INDICATOR_SCRIPT = `
       .transform-gpu .relative.size-10 {
         display: none !important;
       }
+
+      /* Hide endpoint icons in the sidebar conversation list */
+      [data-testid="convo-icon"] {
+        display: none !important;
+      }
     \`;
     document.head.appendChild(styles);
   }
